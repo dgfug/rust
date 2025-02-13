@@ -1,7 +1,7 @@
 use rustc_hir::{self as hir, intravisit};
 use rustc_lint::LateContext;
 use rustc_span::Span;
-use rustc_target::spec::abi::Abi;
+use rustc_abi::ExternAbi;
 
 use clippy_utils::diagnostics::span_lint;
 use clippy_utils::is_trait_impl_item;
@@ -23,12 +23,11 @@ pub(super) fn check_fn(
             intravisit::FnKind::Method(
                 _,
                 &hir::FnSig {
-                    header: hir::FnHeader { abi: Abi::Rust, .. },
+                    header: hir::FnHeader { abi: ExternAbi::Rust, .. },
                     ..
                 },
-                _,
             )
-            | intravisit::FnKind::ItemFn(_, _, hir::FnHeader { abi: Abi::Rust, .. }, _) => check_arg_number(
+            | intravisit::FnKind::ItemFn(_, _, hir::FnHeader { abi: ExternAbi::Rust, .. }) => check_arg_number(
                 cx,
                 decl,
                 span.with_hi(decl.output.span().hi()),
@@ -42,7 +41,7 @@ pub(super) fn check_fn(
 pub(super) fn check_trait_item(cx: &LateContext<'_>, item: &hir::TraitItem<'_>, too_many_arguments_threshold: u64) {
     if let hir::TraitItemKind::Fn(ref sig, _) = item.kind {
         // don't lint extern functions decls, it's not their fault
-        if sig.header.abi == Abi::Rust {
+        if sig.header.abi == ExternAbi::Rust {
             check_arg_number(
                 cx,
                 sig.decl,
@@ -60,10 +59,7 @@ fn check_arg_number(cx: &LateContext<'_>, decl: &hir::FnDecl<'_>, fn_span: Span,
             cx,
             TOO_MANY_ARGUMENTS,
             fn_span,
-            &format!(
-                "this function has too many arguments ({}/{})",
-                args, too_many_arguments_threshold
-            ),
+            format!("this function has too many arguments ({args}/{too_many_arguments_threshold})"),
         );
     }
 }
