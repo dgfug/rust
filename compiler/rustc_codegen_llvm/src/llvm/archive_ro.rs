@@ -1,9 +1,9 @@
 //! A wrapper around LLVM's archive (.a) code
 
-use rustc_fs_util::path_to_c_string;
 use std::path::Path;
-use std::slice;
-use std::str;
+use std::{slice, str};
+
+use rustc_fs_util::path_to_c_string;
 
 pub struct ArchiveRO {
     pub raw: &'static mut super::Archive,
@@ -26,7 +26,7 @@ impl ArchiveRO {
     ///
     /// If this archive is used with a mutable method, then an error will be
     /// raised.
-    pub fn open(dst: &Path) -> Result<ArchiveRO, String> {
+    pub(crate) fn open(dst: &Path) -> Result<ArchiveRO, String> {
         unsafe {
             let s = path_to_c_string(dst);
             let ar = super::LLVMRustOpenArchive(s.as_ptr()).ok_or_else(|| {
@@ -36,7 +36,7 @@ impl ArchiveRO {
         }
     }
 
-    pub fn iter(&self) -> Iter<'_> {
+    pub(crate) fn iter(&self) -> Iter<'_> {
         unsafe { Iter { raw: super::LLVMRustArchiveIteratorNew(self.raw) } }
     }
 }
@@ -71,7 +71,7 @@ impl<'a> Drop for Iter<'a> {
 }
 
 impl<'a> Child<'a> {
-    pub fn name(&self) -> Option<&'a str> {
+    pub(crate) fn name(&self) -> Option<&'a str> {
         unsafe {
             let mut name_len = 0;
             let name_ptr = super::LLVMRustArchiveChildName(self.raw, &mut name_len);
@@ -81,17 +81,6 @@ impl<'a> Child<'a> {
                 let name = slice::from_raw_parts(name_ptr as *const u8, name_len as usize);
                 str::from_utf8(name).ok().map(|s| s.trim())
             }
-        }
-    }
-
-    pub fn data(&self) -> &'a [u8] {
-        unsafe {
-            let mut data_len = 0;
-            let data_ptr = super::LLVMRustArchiveChildData(self.raw, &mut data_len);
-            if data_ptr.is_null() {
-                panic!("failed to read data from archive child");
-            }
-            slice::from_raw_parts(data_ptr as *const u8, data_len as usize)
         }
     }
 }

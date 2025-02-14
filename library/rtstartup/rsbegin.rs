@@ -18,6 +18,8 @@
 #![crate_type = "rlib"]
 #![no_core]
 #![allow(non_camel_case_types)]
+#![allow(internal_features)]
+#![warn(unreachable_pub)]
 
 #[lang = "sized"]
 trait Sized {}
@@ -28,6 +30,8 @@ trait Copy {}
 #[lang = "freeze"]
 auto trait Freeze {}
 
+impl<T: ?Sized> Copy for *mut T {}
+
 #[lang = "drop_in_place"]
 #[inline]
 #[allow(unconditional_recursion)]
@@ -35,10 +39,20 @@ pub unsafe fn drop_in_place<T: ?Sized>(to_drop: *mut T) {
     drop_in_place(to_drop);
 }
 
+// Frame unwind info registration
+//
+// Each module's image contains a frame unwind info section (usually
+// ".eh_frame").  When a module is loaded/unloaded into the process, the
+// unwinder must be informed about the location of this section in memory. The
+// methods of achieving that vary by the platform.  On some (e.g., Linux), the
+// unwinder can discover unwind info sections on its own (by dynamically
+// enumerating currently loaded modules via the dl_iterate_phdr() API and
+// finding their ".eh_frame" sections); Others, like Windows, require modules
+// to actively register their unwind info sections via unwinder API.
 #[cfg(all(target_os = "windows", target_arch = "x86", target_env = "gnu"))]
 pub mod eh_frames {
     #[no_mangle]
-    #[link_section = ".eh_frame"]
+    #[unsafe(link_section = ".eh_frame")]
     // Marks beginning of the stack frame unwind info section
     pub static __EH_FRAME_BEGIN__: [u8; 0] = [];
 
@@ -62,20 +76,19 @@ pub mod eh_frames {
     }
 
     // Unwind info registration/deregistration routines.
-    // See the docs of libpanic_unwind.
-    extern "C" {
-        fn rust_eh_register_frames(eh_frame_begin: *const u8, object: *mut u8);
-        fn rust_eh_unregister_frames(eh_frame_begin: *const u8, object: *mut u8);
+    unsafe extern "C" {
+        fn __register_frame_info(eh_frame_begin: *const u8, object: *mut u8);
+        fn __deregister_frame_info(eh_frame_begin: *const u8, object: *mut u8);
     }
 
     unsafe extern "C" fn init() {
         // register unwind info on module startup
-        rust_eh_register_frames(&__EH_FRAME_BEGIN__ as *const u8, &mut OBJ as *mut _ as *mut u8);
+        __register_frame_info(&__EH_FRAME_BEGIN__ as *const u8, &mut OBJ as *mut _ as *mut u8);
     }
 
     unsafe extern "C" fn uninit() {
         // unregister on shutdown
-        rust_eh_unregister_frames(&__EH_FRAME_BEGIN__ as *const u8, &mut OBJ as *mut _ as *mut u8);
+        __deregister_frame_info(&__EH_FRAME_BEGIN__ as *const u8, &mut OBJ as *mut _ as *mut u8);
     }
 
     // MinGW-specific init/uninit routine registration
@@ -88,10 +101,10 @@ pub mod eh_frames {
         // end of the list. Since constructors are run in reverse order, this ensures that our
         // callbacks are the first and last ones executed.
 
-        #[link_section = ".ctors.65535"] // .ctors.* : C initialization callbacks
+        #[unsafe(link_section = ".ctors.65535")] // .ctors.* : C initialization callbacks
         pub static P_INIT: unsafe extern "C" fn() = super::init;
 
-        #[link_section = ".dtors.65535"] // .dtors.* : C termination callbacks
+        #[unsafe(link_section = ".dtors.65535")] // .dtors.* : C termination callbacks
         pub static P_UNINIT: unsafe extern "C" fn() = super::uninit;
     }
 }

@@ -1,5 +1,5 @@
 error: passing a unit value to a function
-  --> $DIR/unit_arg.rs:56:5
+  --> tests/ui/unit_arg.rs:63:5
    |
 LL | /     foo({
 LL | |         1;
@@ -7,9 +7,11 @@ LL | |     });
    | |______^
    |
    = note: `-D clippy::unit-arg` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::unit_arg)]`
 help: remove the semicolon from the last statement in the block
    |
-LL |         1
+LL -         1;
+LL +         1
    |
 help: or move the expression in front of the call and replace it with the unit literal `()`
    |
@@ -20,7 +22,7 @@ LL ~     foo(());
    |
 
 error: passing a unit value to a function
-  --> $DIR/unit_arg.rs:59:5
+  --> tests/ui/unit_arg.rs:66:5
    |
 LL |     foo(foo(1));
    |     ^^^^^^^^^^^
@@ -32,7 +34,7 @@ LL ~     foo(());
    |
 
 error: passing a unit value to a function
-  --> $DIR/unit_arg.rs:60:5
+  --> tests/ui/unit_arg.rs:67:5
    |
 LL | /     foo({
 LL | |         foo(1);
@@ -42,7 +44,8 @@ LL | |     });
    |
 help: remove the semicolon from the last statement in the block
    |
-LL |         foo(2)
+LL -         foo(2);
+LL +         foo(2)
    |
 help: or move the expression in front of the call and replace it with the unit literal `()`
    |
@@ -54,7 +57,7 @@ LL ~     foo(());
    |
 
 error: passing a unit value to a function
-  --> $DIR/unit_arg.rs:65:5
+  --> tests/ui/unit_arg.rs:72:5
    |
 LL | /     b.bar({
 LL | |         1;
@@ -63,7 +66,8 @@ LL | |     });
    |
 help: remove the semicolon from the last statement in the block
    |
-LL |         1
+LL -         1;
+LL +         1
    |
 help: or move the expression in front of the call and replace it with the unit literal `()`
    |
@@ -74,7 +78,7 @@ LL ~     b.bar(());
    |
 
 error: passing unit values to a function
-  --> $DIR/unit_arg.rs:68:5
+  --> tests/ui/unit_arg.rs:75:5
    |
 LL |     taking_multiple_units(foo(0), foo(1));
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -87,7 +91,7 @@ LL ~     taking_multiple_units((), ());
    |
 
 error: passing unit values to a function
-  --> $DIR/unit_arg.rs:69:5
+  --> tests/ui/unit_arg.rs:76:5
    |
 LL | /     taking_multiple_units(foo(0), {
 LL | |         foo(1);
@@ -97,7 +101,8 @@ LL | |     });
    |
 help: remove the semicolon from the last statement in the block
    |
-LL |         foo(2)
+LL -         foo(2);
+LL +         foo(2)
    |
 help: or move the expressions in front of the call and replace them with the unit literal `()`
    |
@@ -110,7 +115,7 @@ LL ~     taking_multiple_units((), ());
    |
 
 error: passing unit values to a function
-  --> $DIR/unit_arg.rs:73:5
+  --> tests/ui/unit_arg.rs:80:5
    |
 LL | /     taking_multiple_units(
 LL | |         {
@@ -123,11 +128,13 @@ LL | |     );
    |
 help: remove the semicolon from the last statement in the block
    |
-LL |             foo(1)
+LL -             foo(1);
+LL +             foo(1)
    |
 help: remove the semicolon from the last statement in the block
    |
-LL |             foo(3)
+LL -             foo(3);
+LL +             foo(3)
    |
 help: or move the expressions in front of the call and replace them with the unit literal `()`
    |
@@ -137,10 +144,16 @@ LL +         foo(1);
 LL +     };
 LL +     {
 LL +         foo(2);
- ...
+LL +         foo(3);
+LL +     };
+LL +     taking_multiple_units(
+LL +         (),
+LL +         (),
+LL ~     );
+   |
 
 error: passing a unit value to a function
-  --> $DIR/unit_arg.rs:84:13
+  --> tests/ui/unit_arg.rs:91:13
    |
 LL |     None.or(Some(foo(2)));
    |             ^^^^^^^^^^^^
@@ -154,7 +167,7 @@ LL ~     });
    |
 
 error: passing a unit value to a function
-  --> $DIR/unit_arg.rs:87:5
+  --> tests/ui/unit_arg.rs:94:5
    |
 LL |     foo(foo(()));
    |     ^^^^^^^^^^^^
@@ -166,7 +179,7 @@ LL ~     foo(());
    |
 
 error: passing a unit value to a function
-  --> $DIR/unit_arg.rs:124:5
+  --> tests/ui/unit_arg.rs:131:5
    |
 LL |     Some(foo(1))
    |     ^^^^^^^^^^^^
